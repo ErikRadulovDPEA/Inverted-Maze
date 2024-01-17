@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="81b15e6f-1f17-4815-a367-1c0d19cb36a4" name="Inverted Maze - Pi">
+        <fileTransfer accessType="SFTP" sshConfigId="1bbe9fbf-e792-439c-9db1-a8350ae9b548" sshConfig="pi@172.17.21.2:22 agent">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
