@@ -61,6 +61,7 @@ class Server(object):
         Begins listening on bind_ip:port.
         """
         self.server = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #added to avoid "OSError: [Errno 98] Address already in use"
         self.server.bind((self.bind_ip, self.port))
         self.server.listen(1)
 

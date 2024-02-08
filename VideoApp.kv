@@ -1,6 +1,25 @@
 <MainScreen>:
-
+    on_enter: root.start_video()
     name: 'main'
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 1  # Black background color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            width: 15
+
+        Color:
+            rgba: 1, 0, 0, 1
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            width: 10
+
     FloatLayout:
         size_hint: None, None
 
@@ -9,67 +28,150 @@
         size_hint: .75, .75
         pos_hint: {'center_x': .5, 'center_y': .5}
 
-    DPEAButton:
-        id: h_flip_button
-        text: 'H_FLIP'
-        font_size: self.width * .3
-        size_hint: .1, .1
-        pos_hint: {"center_x": .25, "center_y":0.1}
-        color: 0.9, 1, 0, 1
-        on_press: root.toggle_h_flip()
+    Label:
+        id: level_label
+        text: 'Level 1'
+        font_size: '20sp'
+        size_hint: (None, None)
+        pos_hint: {'left': 0.3, 'top': 0.95}
+        color: 1, 0, 0, 1  # Red label color
+        outline_color: 1, 1, 1, 1  # White outline color
+        outline_width: 3
+        bold: True
 
-    DPEAButton:
-        id: v_flip_button
-        text: 'V_FLIP'
-        font_size: self.width * .3
-        size_hint: .1, .1
-        pos_hint: {"center_x": .50, "center_y":0.1}
-        color: 0.9, 1, 0, 1
-        on_press: root.toggle_v_flip()
+#    DPEAButton:
+#        id: h_flip_button
+#        text: 'H_FLIP'
+#        font_size: self.width * .3
+#        size_hint: .1, .1
+#        pos_hint: {"center_x": .25, "center_y":0.1}
+#        color: 0.9, 1, 0, 1
+#        on_press: root.toggle_h_flip()
 
-    DPEAButton:
-        id: vh_flip_button
-        text: 'VH_FLIP'
-        font_size: self.width * .3
-        size_hint: .1, .1
-        pos_hint: {"center_x": .75, "center_y":0.1}
-        color: 0.9, 1, 0, 1
-        on_press: root.toggle_hv_flip()
+#    DPEAButton:
+#        id: v_flip_button
+#        text: 'V_FLIP'
+#        font_size: self.width * .3
+#        size_hint: .1, .1
+#        pos_hint: {"center_x": .50, "center_y":0.1}
+#        color: 0.9, 1, 0, 1
+#        on_press: root.toggle_v_flip()
 
-    DPEAButton:
-        id: test_button
-        text: '>'
-        font_size: self.width * .5
-        size_hint: .1, 1
-        pos_hint: {"x": .9, "y":0}
-        color: 0, 1, 0, 1
-        on_press: root.switch_to_right()
+#    DPEAButton:
+#        id: vh_flip_button
+#        text: 'VH_FLIP'
+#        font_size: self.width * .3
+#        size_hint: .1, .1
+#        pos_hint: {"center_x": .75, "center_y":0.1}
+#        color: 0.9, 1, 0, 1
+#        on_press: root.toggle_hv_flip()
 
-    DPEAButton:
-        text: "<"
-        font_size: self.width * .5
-        size_hint: .1, 1
-        pos_hint: {"x": 0, "y":0}
-        color: 1, 0, 0, 1
-        on_press: root.switch_to_left()
+#    DPEAButton:
+#        id: test_button
+#        text: '>'
+#        font_size: self.width * .5
+#        size_hint: .1, 1
+#        pos_hint: {"x": .9, "y":0}
+#       color: 0, 1, 0, 1
+#        on_press: root.switch_to_right()
+
+#    DPEAButton:
+#        text: "<"
+#        font_size: self.width * .5
+#        size_hint: .1, 1
+#        pos_hint: {"x": 0, "y":0}
+#        color: 1, 0, 0, 1
+#        on_press: root.switch_to_left()
 
 <LeftScreen>:
+    on_enter: root.start_clock()
+    name: 'left'
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 1  # Black background color
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-    name: 'main'
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            width: 15
+
+        Color:
+            rgba: 1, 0, 0, 1
+        Line:
+            rectangle: self.x, self.y, self.width, self.height
+            width: 10
+
     FloatLayout:
         size_hint: None, None
+
+    Label:
+        id: letter_1
+        text: 'A'
+        font_size: '60sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.4, 'top': 0.95}
+        color: 1, 0, 0, 1  # Red label color
+        outline_color: 1, 1, 1, 1  # White outline color
+        outline_width: 3
+        bold: True
+
+    Label:
+        id: letter_2
+        text: 'A'
+        font_size: '50sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.5, 'top': 0.95}
+        color: 1, 0, 0, 0.75
+        outline_color: 1, 1, 1, 0.75
+        outline_width: 3
+        bold: True
+
+    Label:
+        id: letter_3
+        text: 'A'
+        font_size: '50sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.6, 'top': 0.95}
+        color: 1, 0, 0, 0.75
+        outline_color: 1, 1, 1, 0.75
+        outline_width: 3
+        bold: True
+
+    Label:
+        id: pos_marker
+        text: '^'
+        font_size: '32sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.4, 'center_y': 0.80}
+        color: 1, 0, 0, 1
+        outline_color: 1, 1, 1, 1
+        outline_width: 3
+        bold: True
+
+    DPEAButton:
+        id: letter_enter
+        text: 'ENTER'
+        font_size: self.width * .3
+        size_hint: .1, .1
+        pos_hint: {"center_x": .5, "center_y":0.1}
+        color: 0.9, 1, 0, 1
+        on_press: root.letter_button()
 
     DPEAButton:
         id: test_button
         text:'back'
-        size: 100, 100
-        pos_hint: {"center_x": 0.5, "center_y":0.5}
-        color: 1, 0, 0, 1
+        size: 25, 25
+        pos_hint: {"center_x": 0.15, "center_y":0.15}
+        color: 0, 1, 0, 1
         on_press: root.switch_screen()
 
 <RightScreen>:
-
-    name: 'main'
+    on_enter: root.start_clock(); root.update_high_scores()
+    name: 'right'
     FloatLayout:
         size_hint: None, None
 
@@ -81,30 +183,33 @@
         color: 0, 1, 0, 1
         on_press: root.switch_screen()
 
-    Label:
-        text: 'High Scores'
-        font_size: '32sp'
-        size_hint: (None, None)
-        pos_hint: {'center_x': 0.5, 'top': 0.95}
-        color: 0, 0, 0, 1
+#    Label:
+#        id: hs_label
+#        text: 'High Scores'
+#        font_size: '32sp'
+#       size_hint: (None, None)
+#        pos_hint: {'center_x': 0.5, 'top': 0.95}
+#        color: 0, 0, 0, 1
 
-    Label:
-        text: '1st'
-        font_size: '24sp'
-        size_hint: (None, None)
-        pos_hint: {'left': 0.1, 'top': 0.85}
-        color: 0, 0, 0, 1
+#    Label:
+#        text: '1st'
+#        font_size: '24sp'
+#        size_hint: (None, None)
+#        pos_hint: {'left': 0.1, 'top': 0.85}
+#        color: 0, 0, 0, 1
 
-    Label:
-        text: '99:99'
-        font_size: '24sp'
-        size_hint: (None, None)
-        pos_hint: {'right': 0.9, 'top': 0.85}
-        color: 0, 0, 0, 1
+#    Label:
+#        id: t1
+#        text: '99:99'
+#        font_size: '24sp'
+#        size_hint: (None, None)
+#        pos_hint: {'right': 0.9, 'top': 0.85}
+#        color: 0, 0, 0, 1
 
-    Label:
-        text: 'AAA'
-        font_size: '24sp'
-        size_hint: (None, None)
-        pos_hint: {'center_x': 0.5, 'top': 0.85}
-        color: 0, 0, 0, 1
+#    Label:
+#        id: n1
+#        text: 'AAA'
+#        font_size: '24sp'
+#        size_hint: (None, None)
+#        pos_hint: {'center_x': 0.5, 'top': 0.85}
+#        color: 0, 0, 0, 1
