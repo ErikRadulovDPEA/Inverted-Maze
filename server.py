@@ -12,6 +12,8 @@ class PacketType(enum.Enum):
     COMMAND3 = 3
     COMMAND4 = 4
     COMMAND5 = 5
+    COMMAND6 = 6
+
 
 class Maze_Server:
     def __init__(self, *args, **kwargs):
@@ -33,6 +35,7 @@ class Maze_Server:
         self.but3_presses = False
         self.maze_time = 0
         self.maze_end_flag = False
+        self.ball_insert = False
         self.level = 0
         self.abc = 0
     def __del__(self):
@@ -61,6 +64,7 @@ class Maze_Server:
                     print("button1 turned on")
                 self.but1_state = not self.but1_state
                 self.but1_presses = True
+                self.level -= 1
             elif packet_type == "PacketType.COMMAND2":
                 if self.but2_state:
                     print("button2 turned off")
@@ -68,6 +72,7 @@ class Maze_Server:
                     print("button2 turned on")
                 self.but2_state = not self.but2_state
                 self.but2_presses = True
+                self.level += 1
             elif packet_type == "PacketType.COMMAND3":
                 if self.but3_state:
                     print("button3 turned off")
@@ -78,7 +83,10 @@ class Maze_Server:
             elif packet_type == "PacketType.COMMAND4":
                 self.maze_time = round(float(packet[1].decode('utf-8')), 2)
                 self.maze_end_flag = True
+                print("maze ended")
             elif packet_type == "PacketType.COMMAND5":
+                self.ball_insert = True
+            elif packet_type == "PacketType.COMMAND6":
                 print(packet[1].decode('utf-8'))
 
         except Exception as err:
@@ -98,12 +106,10 @@ class Maze_Server:
         if but_num == 1:
             if self.but1_presses:
                 self.but1_presses = False
-                self.level -= 1
                 return True
         elif but_num == 2:
             if self.but2_presses:
                 self.but2_presses = False
-                self.level += 1
                 return True
         elif but_num == 3:
             if self.but3_presses:

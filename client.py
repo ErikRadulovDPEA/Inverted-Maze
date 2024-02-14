@@ -1,8 +1,9 @@
 import enum
+import atexit
 from dpea_p2p import Client
 from dpeaDPi.DPiComputer import DPiComputer
 from dpeaDPi.DPiPowerDrive import DPiPowerDrive
-from DPiDigitalIn import DPiDigitalIn
+from dpeaDPi.DPiDigitalIn import DPiDigitalIn
 from time import sleep, time
 
 dpiComputer = DPiComputer()
@@ -18,6 +19,7 @@ class PacketType(enum.Enum):
     COMMAND3 = 3
     COMMAND4 = 4
     COMMAND5 = 5
+    COMMAND6 = 6
 
 
 class Maze_Client:
@@ -43,7 +45,7 @@ class Maze_Client:
             packet = self.client.recv_packet()
             packet_type = str(packet[0])
             if packet_type == "PacketType.COMMAND1":
-                print("sent packet to server")
+                dpiPowerDrive.switchDriverOnOrOff(0, False)
         except Exception as e:
             self.client.send_packet(PacketType.RESPONSE_ERROR, bytes(str(e)))
 
@@ -69,6 +71,9 @@ class Maze_Client:
         payload = str(time_dif).encode('utf-8')
         self.client.send_packet(PacketType.COMMAND4, payload)
 
+    def ball_insert(self):
+        self.client.send_packet(PacketType.COMMAND5, b'ball_insert')
+
     def ping_test(self):
         if not dpiDigitalIn.ping():
             DDI = "Communication with the DPiDigitalIn board failed."
@@ -79,14 +84,18 @@ class Maze_Client:
         else:
             DPD = "Communication with the DPiPowerDrive board succeeded."
         payload = (DDI + "\n" + DPD).encode('utf-8')
-        self.client.send_packet(PacketType.COMMAND5, payload)
+        self.client.send_packet(PacketType.COMMAND6, payload)
+
+    def clean_up(self):
+        dpiPowerDrive.switchDriverOnOrOff(0, False)
 
 
 if __name__ == "__main__":
     c = Maze_Client()
     c.ping_test()
-    dpiPowerDrive.switchDriverOnOrOff(0, False)  # temp False for testing need to auto turn off mayb too
+    dpiPowerDrive.switchDriverOnOrOff(0, False)  # temp False for testing
     while True:
+        # c.switch()
         c.button1()
         c.button2()
         c.button3()
@@ -94,6 +103,7 @@ if __name__ == "__main__":
         _, latch_value_1 = dpiDigitalIn.readLatch(1)
         if latch_value_0:
             start_time = time()
+            c.ball_insert()
         if latch_value_1:
             end_time = time()
             c.return_time(end_time - start_time)
