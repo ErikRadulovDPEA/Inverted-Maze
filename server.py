@@ -1,8 +1,5 @@
 import enum
-import socket
-
 from dpea_p2p.server import Server
-from time import sleep
 
 class PacketType(enum.Enum):
     NULL = 0
@@ -13,6 +10,7 @@ class PacketType(enum.Enum):
     COMMAND4 = 4
     COMMAND5 = 5
     COMMAND6 = 6
+    COMMAND7 = 7
 
 
 class Maze_Server:
@@ -36,8 +34,9 @@ class Maze_Server:
         self.maze_time = 0
         self.maze_end_flag = False
         self.ball_insert = False
-        self.level = 0
+        self.level = 1
         self.abc = 0
+
     def __del__(self):
         if self.server.connection:
             self.server.close_connection()
@@ -49,8 +48,8 @@ class Maze_Server:
     def send_packet(self, num):
         if self.server is None:
             raise Exception("In Server.send_packet(): Server object does not exist")
-        if num == 0:
-            self.server.send_packet(PacketType.COMMAND1, b"button")
+        if num == 1:
+            self.server.send_packet(PacketType.COMMAND1, b"cleanup")
             print("sent packet to client")
 
     def switch(self):
@@ -88,6 +87,8 @@ class Maze_Server:
                 self.ball_insert = True
             elif packet_type == "PacketType.COMMAND6":
                 print(packet[1].decode('utf-8'))
+            elif packet_type == "PacketType.COMMAND7":
+                self.maze_time = round(float(packet[1].decode('utf-8')), 2)
 
         except Exception as err:
             raise err
@@ -118,8 +119,6 @@ class Maze_Server:
         else:
             return 0
 
-    def get_maze_time(self):
-        return self.maze_time
 
 
 

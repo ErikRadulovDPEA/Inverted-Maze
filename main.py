@@ -9,14 +9,21 @@ from kivy.uix.label import Label
 from kivy.animation import Animation
 from kivy import *
 from pidev.kivy import DPEAButton
-from time import sleep
+from time import time
 from dpea_p2p import server
 from threading import Thread
 from server import Maze_Server
 import subprocess
-import string
 from high_scores import HighScore
 import cv2
+import atexit
+
+
+def cleanup():
+    s.send_packet(1)
+
+
+atexit.register(cleanup)  # sends a packet that tells the client to turn off when the server program stops
 
 SCREEN_MANAGER = ScreenManager()
 MAIN_SCREEN_NAME = 'main'
@@ -40,7 +47,7 @@ server_thread = Thread(target=run_switch, daemon=True, name='Server Thread').sta
 
 """variables and class declarations"""
 level = 1
-alphabet_list = list(string.ascii_uppercase)
+alphabet_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 abc = 0
 letter = 1
 name_letters = ""
@@ -87,7 +94,7 @@ class MainScreen(Screen):
 
     def update(self, dt):
         global level
-        self.ids.img1.size_hint = (1, 1) #changing size hint in kv file doesnt work for some reason so i do it here
+        self.ids.img1.size_hint = (1, 1)
         if self.play_video:
             self.lvl_5_state += 1
             _, frame = self.capture.read()
@@ -98,12 +105,11 @@ class MainScreen(Screen):
             texture = self.convert_to_texture(frame)
             self.ids.img1.texture = texture
             if s.ball_insert:
-                level = s.level
-                print("ball insert flag triggered")
+                level = s.level % 5
+                self.ids.time_label.text = format(time() - s.maze_time, '.2f')
                 self.ids.level_label.text = ''
+                self.ids.insert_label.text = ''
                 if s.maze_end_flag:
-                    print(
-                        "maze end flag triggered")
                     self.play_video = False
                     SCREEN_MANAGER.transition = NoTransition()
                     SCREEN_MANAGER.current = LEFT_SCREEN_NAME
@@ -112,19 +118,23 @@ class MainScreen(Screen):
         byte_buf = frame.tobytes()
         texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr')
         texture.flip_vertical()
-        if s.level % 5 == 0:
-            self.ids.level_label.text = 'Level 1'
         if s.level % 5 == 1:
-            texture.flip_horizontal()
-            self.ids.level_label.text = 'Level 2'
+            if not s.ball_insert:
+                self.ids.level_label.text = 'Level 1'
         if s.level % 5 == 2:
-            texture.flip_vertical()
-            self.ids.level_label.text = 'Level 3'
+            texture.flip_horizontal()
+            if not s.ball_insert:
+                self.ids.level_label.text = 'Level 2'
         if s.level % 5 == 3:
+            texture.flip_vertical()
+            if not s.ball_insert:
+                self.ids.level_label.text = 'Level 3'
+        if s.level % 5 == 4:
             texture.flip_horizontal()
             texture.flip_vertical()
-            self.ids.level_label.text = 'Level 4'
-        if s.level % 5 == 4:
+            if not s.ball_insert:
+                self.ids.level_label.text = 'Level 4'
+        if s.level % 5 == 0:
             if 0 <= self.lvl_5_state % 240 <= 59:
                 pass
             if 60 <= self.lvl_5_state % 240 <= 119:
@@ -134,15 +144,17 @@ class MainScreen(Screen):
             if 180 <= self.lvl_5_state % 240 <= 239:
                 texture.flip_horizontal()
                 texture.flip_vertical()
-            self.ids.level_label.text = 'Level 5'
+            if not s.ball_insert:
+                self.ids.level_label.text = 'Level 5'
 
         texture.blit_buffer(byte_buf, colorfmt='bgr', bufferfmt='ubyte')
         return texture
 
     def start_video(self):
-        s.level = 0
+        s.level = 1
+        self.ids.insert_label.text = 'Insert ball to start'
+        self.ids.time_label.text = ''
         s.ball_insert = False
-        self.ids.img1.size_hint = (.75, .75)
         s.maze_end_flag = False
         self.play_video = True
 
@@ -171,31 +183,40 @@ class RightScreen(Screen):
         global level
         self.clear_widgets()
         self.add_widget(Label(
-            text='High Scores' + str(level + 1),
-            font_size='32sp',
+            text=f'level {level} High Scores',
+            font_size=75,
             size_hint=(None, None),
             pos_hint={'center_x': 0.5, 'top': 0.95},
-            color=(0, 0, 0, 1)
+            color=(1, 0, 0, 1),
+            outline_color=(1, 1, 1, 1),
+            outline_width=3,
+            bold=True
         ))
-        y = 0.9
+        y = 0.85
         for i, score in enumerate(high_score.scores[level]):
-            self.add_widget(Label(
-                text=f"{i + 1}. {score['name']} {score['time']}",
-                pos_hint={'center_x': 0.5, 'top': y},
-                size_hint=(None, None),
-                color=(0, 0, 0, 1),
-                font_size=32))
-            y -= 0.05
+            if i <= 9:
+                self.add_widget(Label(
+                    text=f"{i+1}. {score['name']} {format(score['time'], '.2f')}",  # formatted to keep trailing zero
+                    pos_hint={'center_x': 0.5, 'top': y},
+                    size_hint=(None, None),
+                    color=(1, 0, 0, 1),
+                    outline_color=(1, 1, 1, 1),
+                    outline_width=3,
+                    bold=True,
+                    font_size=60
+                ))
+            y -= 0.075
 
     def start_clock(self):
-        Clock.schedule_interval(self.switch_screen, 1.0 / 33.0)
+        Clock.schedule_interval(self.switch_screen, 1.0 / 30.0)
 
 
-class LeftScreen(Screen):  # need to and add "record your high score"
+class LeftScreen(Screen):
     def start_clock(self):
         s.but1_presses = False
         s.but2_presses = False
-        Clock.schedule_interval(self.change_letter, 1.0 / 33.0)
+        self.ids.time_label.text = format(s.maze_time, '.2f')
+        Clock.schedule_interval(self.change_letter, 1.0 / 30.0)
 
     def change_letter(self, dt):
         global alphabet_list, abc, letter, name_letters, level
@@ -213,21 +234,21 @@ class LeftScreen(Screen):  # need to and add "record your high score"
             self.ids.letter_2.text = alphabet_list[abc % 26]
             self.ids.letter_2.color = 1, 0, 0, 1
             self.ids.letter_2.outline_color = 1, 1, 1, 1
-            self.ids.letter_1.font_size = 100
-            self.ids.letter_2.font_size = 120
+            self.ids.letter_1.font_size = 140
+            self.ids.letter_2.font_size = 180
             self.ids.pos_marker.pos_hint = {"center_x": 0.5}
         if letter == 3:
             self.ids.letter_3.text = alphabet_list[abc % 26]
             self.ids.letter_3.color = 1, 0, 0, 1
             self.ids.letter_3.outline_color = 1, 1, 1, 1
-            self.ids.letter_2.font_size = 100
-            self.ids.letter_3.font_size = 120
+            self.ids.letter_2.font_size = 140
+            self.ids.letter_3.font_size = 180
             self.ids.pos_marker.pos_hint = {"center_x": 0.6}
         if letter == 4:
             high_score.add_score(name_letters, s.maze_time, level)
             name_letters = ""
-            self.ids.letter_3.font_size = 100
-            self.ids.letter_1.font_size = 120
+            self.ids.letter_3.font_size = 140
+            self.ids.letter_1.font_size = 180
             abc = 0
             self.ids.letter_1.text = alphabet_list[abc]
             self.ids.letter_2.text = alphabet_list[abc]

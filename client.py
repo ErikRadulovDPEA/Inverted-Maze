@@ -1,14 +1,15 @@
 import enum
-import atexit
 from dpea_p2p import Client
 from dpeaDPi.DPiComputer import DPiComputer
 from dpeaDPi.DPiPowerDrive import DPiPowerDrive
 from dpeaDPi.DPiDigitalIn import DPiDigitalIn
 from time import sleep, time
+from threading import Thread
 
 dpiComputer = DPiComputer()
 dpiPowerDrive = DPiPowerDrive()
 dpiDigitalIn = DPiDigitalIn()
+
 
 
 class PacketType(enum.Enum):
@@ -20,6 +21,9 @@ class PacketType(enum.Enum):
     COMMAND4 = 4
     COMMAND5 = 5
     COMMAND6 = 6
+    COMMAND7 = 7
+    RESPONSE_ERROR = 8
+
 
 
 class Maze_Client:
@@ -33,7 +37,7 @@ class Maze_Client:
             dpiDigitalIn.setBoardNumber(0)
             dpiDigitalIn.initialize()
             for i in range(16):
-                dpiDigitalIn.setLatchActiveLow(i)
+                dpiDigitalIn.setLatchActiveLow(i) #switch to high when sensors are added
             dpiDigitalIn.clearAllLatches()
             print("Client initialized")
         except Exception as err:
@@ -46,6 +50,7 @@ class Maze_Client:
             packet_type = str(packet[0])
             if packet_type == "PacketType.COMMAND1":
                 dpiPowerDrive.switchDriverOnOrOff(0, False)
+
         except Exception as e:
             self.client.send_packet(PacketType.RESPONSE_ERROR, bytes(str(e)))
 
@@ -67,7 +72,7 @@ class Maze_Client:
             print("sent button_3 to server")
             sleep(0.25)
 
-    def return_time(self, time_dif):
+    def return_ending_time(self, time_dif):
         payload = str(time_dif).encode('utf-8')
         self.client.send_packet(PacketType.COMMAND4, payload)
 
@@ -86,16 +91,17 @@ class Maze_Client:
         payload = (DDI + "\n" + DPD).encode('utf-8')
         self.client.send_packet(PacketType.COMMAND6, payload)
 
-    def clean_up(self):
-        dpiPowerDrive.switchDriverOnOrOff(0, False)
+    def return_starting_time(self, time):
+        payload = str(time).encode('utf-8')
+        self.client.send_packet(PacketType.COMMAND7, payload)
 
 
 if __name__ == "__main__":
     c = Maze_Client()
     c.ping_test()
     dpiPowerDrive.switchDriverOnOrOff(0, False)  # temp False for testing
+    Thread(target=c.switch, daemon=True).start()
     while True:
-        # c.switch()
         c.button1()
         c.button2()
         c.button3()
@@ -104,6 +110,7 @@ if __name__ == "__main__":
         if latch_value_0:
             start_time = time()
             c.ball_insert()
+            c.return_starting_time(start_time)
         if latch_value_1:
             end_time = time()
-            c.return_time(end_time - start_time)
+            c.return_ending_time(end_time - start_time)
