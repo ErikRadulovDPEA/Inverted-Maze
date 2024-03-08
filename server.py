@@ -57,26 +57,14 @@ class Maze_Server:
             packet = self.server.recv_packet()
             packet_type = str(packet[0])
             if packet_type == "PacketType.COMMAND1":
-                if self.but1_state:
-                    print("button1 turned off")
-                else:
-                    print("button1 turned on")
                 self.but1_state = not self.but1_state
                 self.but1_presses = True
                 self.level -= 1
             elif packet_type == "PacketType.COMMAND2":
-                if self.but2_state:
-                    print("button2 turned off")
-                else:
-                    print("button2 turned on")
                 self.but2_state = not self.but2_state
                 self.but2_presses = True
                 self.level += 1
             elif packet_type == "PacketType.COMMAND3":
-                if self.but3_state:
-                    print("button3 turned off")
-                else:
-                    print("button3 turned on")
                 self.but3_state = not self.but3_state
                 self.but3_presses = True
             elif packet_type == "PacketType.COMMAND4":

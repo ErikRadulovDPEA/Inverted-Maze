@@ -37,7 +37,7 @@ class Maze_Client:
             dpiDigitalIn.setBoardNumber(0)
             dpiDigitalIn.initialize()
             for i in range(16):
-                dpiDigitalIn.setLatchActiveLow(i) #switch to high when sensors are added
+                dpiDigitalIn.setLatchActiveHigh(i)
             dpiDigitalIn.clearAllLatches()
             print("Client initialized")
         except Exception as err:
@@ -52,7 +52,7 @@ class Maze_Client:
                 dpiPowerDrive.switchDriverOnOrOff(0, False)
 
         except Exception as e:
-            self.client.send_packet(PacketType.RESPONSE_ERROR, bytes(str(e)))
+            self.client.send_packet(PacketType.RESPONSE_ERROR, bytearray(str(e), 'utf-8'))
 
     def button1(self):
         if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_0):
@@ -67,7 +67,7 @@ class Maze_Client:
             sleep(0.25)
 
     def button3(self):
-        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_2):
+        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_3):
             self.client.send_packet(PacketType.COMMAND3, b"but3")
             print("sent button_3 to server")
             sleep(0.25)
@@ -99,7 +99,7 @@ class Maze_Client:
 if __name__ == "__main__":
     c = Maze_Client()
     c.ping_test()
-    dpiPowerDrive.switchDriverOnOrOff(0, False)  # temp False for testing
+    dpiPowerDrive.switchDriverOnOrOff(0, True)
     Thread(target=c.switch, daemon=True).start()
     while True:
         c.button1()

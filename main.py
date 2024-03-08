@@ -17,6 +17,12 @@ import subprocess
 from high_scores import HighScore
 import cv2
 import atexit
+from profanity_check import predict
+from kivy.config import Config
+
+
+Config.set('graphics', 'width', '1366')
+Config.set('graphics', 'height', '768')
 
 
 def cleanup():
@@ -47,7 +53,7 @@ server_thread = Thread(target=run_switch, daemon=True, name='Server Thread').sta
 
 """variables and class declarations"""
 level = 1
-alphabet_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+alphabet_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 abc = 0
 letter = 1
 name_letters = ""
@@ -94,7 +100,6 @@ class MainScreen(Screen):
 
     def update(self, dt):
         global level
-        self.ids.img1.size_hint = (1, 1)
         if self.play_video:
             self.lvl_5_state += 1
             _, frame = self.capture.read()
@@ -105,7 +110,10 @@ class MainScreen(Screen):
             texture = self.convert_to_texture(frame)
             self.ids.img1.texture = texture
             if s.ball_insert:
-                level = s.level % 5
+                if s.level % 5 == 0:
+                    level = 5
+                else:
+                    level = s.level % 5
                 self.ids.time_label.text = format(time() - s.maze_time, '.2f')
                 self.ids.level_label.text = ''
                 self.ids.insert_label.text = ''
@@ -171,7 +179,7 @@ class MainScreen(Screen):
 
 class RightScreen(Screen):
     def switch_screen(self, dt):
-        if s.but1_state or s.but2_state or s.but3_state:
+        if s.but1_state or s.but2_state or s.but3_state:  # could just add a while not(until) at the end of update_high_scores instead of a clock
             Clock.unschedule(self.switch_screen)
             s.but1_state = False
             s.but2_state = False
@@ -196,7 +204,7 @@ class RightScreen(Screen):
         for i, score in enumerate(high_score.scores[level]):
             if i <= 9:
                 self.add_widget(Label(
-                    text=f"{i+1}. {score['name']} {format(score['time'], '.2f')}",  # formatted to keep trailing zero
+                    text=f"{i + 1}. {score['name']} {format(score['time'], '.2f')}",  # formatted to keep trailing zero
                     pos_hint={'center_x': 0.5, 'top': y},
                     size_hint=(None, None),
                     color=(1, 0, 0, 1),
@@ -225,46 +233,42 @@ class LeftScreen(Screen):
         if s.check_button_presses(2):
             abc = abc + 1
         if s.check_button_presses(3):
-            name_letters += alphabet_list[abc % 26]
-            letter += 1
-            abc = 0
-        if letter == 1:
-            self.ids.letter_1.text = alphabet_list[abc % 26]
-        if letter == 2:
-            self.ids.letter_2.text = alphabet_list[abc % 26]
-            self.ids.letter_2.color = 1, 0, 0, 1
-            self.ids.letter_2.outline_color = 1, 1, 1, 1
-            self.ids.letter_1.font_size = 140
-            self.ids.letter_2.font_size = 180
-            self.ids.pos_marker.pos_hint = {"center_x": 0.5}
-        if letter == 3:
-            self.ids.letter_3.text = alphabet_list[abc % 26]
-            self.ids.letter_3.color = 1, 0, 0, 1
-            self.ids.letter_3.outline_color = 1, 1, 1, 1
-            self.ids.letter_2.font_size = 140
-            self.ids.letter_3.font_size = 180
-            self.ids.pos_marker.pos_hint = {"center_x": 0.6}
-        if letter == 4:
-            high_score.add_score(name_letters, s.maze_time, level)
-            name_letters = ""
-            self.ids.letter_3.font_size = 140
-            self.ids.letter_1.font_size = 180
-            abc = 0
-            self.ids.letter_1.text = alphabet_list[abc]
-            self.ids.letter_2.text = alphabet_list[abc]
-            self.ids.letter_3.text = alphabet_list[abc]
-            self.ids.letter_2.color = 1, 0, 0, 0.75
-            self.ids.letter_2.outline_color = 1, 1, 1, 0.75
-            self.ids.letter_3.color = 1, 0, 0, 0.75
-            self.ids.letter_3.outline_color = 1, 1, 1, 0.75
-            self.ids.pos_marker.pos_hint = {"center_x": 0.4}
-            letter = 1
-            s.but1_state = False
-            s.but2_state = False
-            s.but3_state = False
-            Clock.unschedule(self.change_letter)
-            SCREEN_MANAGER.transition = NoTransition()
-            SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
+            if abc % 27 != 26:
+                name_letters += alphabet_list[abc % 27]
+                self.ids.name_label.text = name_letters
+                letter += 1
+            if abc % 27 == 26 and letter >= 3:
+                if bool(predict([name_letters])) or letter >= 30:  # profanity filter and letter limit
+                    letter = 0
+                    abc = 0
+                    name_letters = ""
+                    self.ids.name_label.text = ''
+                else:
+                    high_score.add_score(name_letters, s.maze_time, level)
+                    letter = 0
+                    abc = 0
+                    name_letters = ""
+                    self.ids.name_label.text = ''
+                    s.but1_state = False
+                    s.but2_state = False
+                    s.but3_state = False
+                    Clock.unschedule(self.change_letter)
+                    SCREEN_MANAGER.transition = NoTransition()
+                    SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
+        if abc % 27 == 26:
+            self.ids.img2.pos_hint = {"center_x": 0.5}
+            self.ids.img2.color = 1, 1, 1, 1
+        elif abc % 27 == 0:
+            self.ids.img2.pos_hint = {"center_x": 0.4}
+            self.ids.img2.color = 1, 1, 1, .75
+        elif abc % 27 == 25:
+            self.ids.img2.pos_hint = {"center_x": 0.6}
+            self.ids.img2.color = 1, 1, 1, .75
+        else:
+            self.ids.img2.pos_hint = {"center_x": 2}
+        self.ids.letter_1.text = alphabet_list[(abc - 1) % 27]
+        self.ids.letter_2.text = alphabet_list[abc % 27]
+        self.ids.letter_3.text = alphabet_list[(abc + 1) % 27]
 
     def letter_button(self):  # temp kivy button because I dont have 3rd button
         s.but3_presses = True
