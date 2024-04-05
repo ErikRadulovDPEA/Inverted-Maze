@@ -59,11 +59,9 @@ class Maze_Server:
             if packet_type == "PacketType.COMMAND1":
                 self.but1_state = not self.but1_state
                 self.but1_presses = True
-                self.level -= 1
             elif packet_type == "PacketType.COMMAND2":
                 self.but2_state = not self.but2_state
                 self.but2_presses = True
-                self.level += 1
             elif packet_type == "PacketType.COMMAND3":
                 self.but3_state = not self.but3_state
                 self.but3_presses = True

@@ -13,41 +13,87 @@
         size_hint: root.width, root.height
 
     Image:
+        id: img2
+        size_hint: 1, 1
+        fit_mode: "contain"
+
+    Image:
         id: img1
         size_hint: 1, 1
         fit_mode: "contain"
-        pos_hint: {'center_x': .5, 'center_y': .5}
+
+
+
+#    DPEAButton:
+#        id: temp_but_1
+#        font_size: self.width * .3
+#        text: '<'
+#        size_hint: .1, .1
+#        pos_hint: {"center_x": .4, "center_y":0.1}
+#        color: 1, 0, 0, 1
+#        on_press: root.red_button()
+
+#    DPEAButton:
+#        id: temp_but_2
+#        font_size: self.width * .3
+#        text: '>'
+#        size_hint: .1, .1
+#        pos_hint: {"center_x": .6, "center_y":0.1}
+#        color: 0, 0, 1, 1
+#        on_press: root.blue_button()
+
+
 
     Label:
         id: level_label
         text: 'Level 1'
-        font_size: '35sp'
+        font_size: '50sp'
         size_hint: (None, None)
-        pos_hint: {'center_x': 0.1, 'top': 0.95}
+        pos_hint: {'center_x': 0.07, 'top': 0.95}
         color: 1, 0, 0, 1  # Red label color
         outline_color: 1, 1, 1, 1  # White outline color
         outline_width: 2
         bold: True
 
     Label:
+        id: left_arrow
+        text: '<'
+        font_size: '100sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.07, 'center_y': 0.5}
+        color: 1, 0, 0, 1
+        outline_color: 1, 1, 1, 1
+        outline_width: 2
+        #bold: True
+
+    Label:
+        id: right_arrow
+        text: '>'
+        font_size: '100sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.93, 'center_y': 0.5}
+        color: 1, 0, 0, 1
+        outline_color: 1, 1, 1, 1
+        outline_width: 2
+        #bold: True
+
+    Label:
         id: insert_label
         text: 'Insert ball to start'
-        font_size: '35sp'
+        font_size: '80sp'
         size_hint: (None, None)
-        pos_hint: {'center_x': 0.12, 'top': 0.15}
+        pos_hint: {'center_x': 0.5, 'top': 0.95}
         color: 1, 0, 0, 1  # Red label color
         outline_color: 1, 1, 1, 1  # White outline color
-        #color: 1, 1, 1, 1
-        #outline_color: 1, 0, 0, 1
-        outline_width: 2
+        outline_width: 3
         bold: True
 
     Label:
         id: time_label
         text: ''
-        font_size: '35sp'
+        font_size: '50sp'
         size_hint: (None, None)
-        pos_hint: {'center_x': 0.5, 'top': 0.15}
+        pos_hint: {'center_x': 0.07, 'top': 0.95}
         color: 1, 0, 0, 1  # Red label color
         outline_color: 1, 1, 1, 1  # White outline color
         outline_width: 2
@@ -63,17 +109,6 @@
             pos: self.pos
             size: self.size
 
-        Color:
-            rgba: 1, 1, 1, 1
-        Line:
-            rectangle: self.x, self.y, self.width, self.height
-            width: 15
-
-        Color:
-            rgba: 1, 0, 0, 1
-        Line:
-            rectangle: self.x, self.y, self.width, self.height
-            width: 10
 
     FloatLayout:
         size_hint: None, None
@@ -81,7 +116,7 @@
     Image:
         id: img2
         size_hint: (0.15, 0.15)
-        source: 'entersymbol.png'
+        source: 'enter_symbol.png'
         pos_hint: {'center_x': .5, 'center_y': .3}
         color: 1, 1, 1, 0.75
 
@@ -129,14 +164,6 @@
         outline_width: 2
         bold: True
 
-#    DPEAButton:
-#        id: letter_enter
-#        text: 'TEMP'
-#        font_size: self.width * .3
-#        size_hint: .1, .1
-#        pos_hint: {"center_x": .5, "center_y":0.1}
-#        color: 0.9, 1, 0, 1
-#        on_press: root.letter_button()
 
     Label:
         id: score_label
@@ -183,18 +210,6 @@
         Rectangle:
             pos: self.pos
             size: self.size
-
-        Color:
-            rgba: 1, 1, 1, 1
-        Line:
-            rectangle: self.x, self.y, self.width, self.height
-            width: 15
-
-        Color:
-            rgba: 1, 0, 0, 1
-        Line:
-            rectangle: self.x, self.y, self.width, self.height
-            width: 10
 
     FloatLayout:
         size_hint: None, None

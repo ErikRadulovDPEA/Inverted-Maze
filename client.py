@@ -58,13 +58,13 @@ class Maze_Client:
         if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_0):
             self.client.send_packet(PacketType.COMMAND1, b"but1")
             print("sent button_1 to server")
-            sleep(0.25)
+            sleep(0.2)
 
     def button2(self):
         if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_1):
             self.client.send_packet(PacketType.COMMAND2, b"but2")
             print("sent button_2 to server")
-            sleep(0.25)
+            sleep(0.2)
 
     def button3(self):
         if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_3):
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     c = Maze_Client()
     c.ping_test()
     dpiPowerDrive.switchDriverOnOrOff(0, True)
+    dpiPowerDrive.setDriverPWM(0, 16)
     Thread(target=c.switch, daemon=True).start()
     while True:
         c.button1()
@@ -108,7 +109,7 @@ if __name__ == "__main__":
         _, latch_value_0 = dpiDigitalIn.readLatch(0)
         _, latch_value_1 = dpiDigitalIn.readLatch(1)
         if latch_value_0:
-            start_time = time()
+            start_time = time() + 2
             c.ball_insert()
             c.return_starting_time(start_time)
         if latch_value_1:
