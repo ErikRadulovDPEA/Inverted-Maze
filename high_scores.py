@@ -12,6 +12,16 @@ class HighScore:
         self.scores[level] = sorted(self.scores[level], key=lambda x: x['time'])
         self.save_to_json()
 
+    def in_top_ten(self, level, time):
+        if len(self.scores[level]) < 10:
+            return True
+        return time < self.scores[level][9]['time']
+
+    def get_placement(self, level, time):
+        for i, score in enumerate(self.scores[level]):
+            if time == score['time']:
+                return i+1
+
     def save_to_json(self):
         with open("high_scores.json", 'w') as file:
             json.dump(self.scores, file)

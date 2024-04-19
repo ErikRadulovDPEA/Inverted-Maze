@@ -33,7 +33,7 @@
 #        color: 1, 0, 0, 1
 #        on_press: root.red_button()
 
-#    DPEAButton:
+#    Button:
 #        id: temp_but_2
 #        font_size: self.width * .3
 #        text: '>'
@@ -55,27 +55,18 @@
         outline_width: 2
         bold: True
 
-    Label:
-        id: left_arrow
-        text: '<'
-        font_size: '100sp'
-        size_hint: (None, None)
-        pos_hint: {'center_x': 0.07, 'center_y': 0.5}
-        color: 1, 0, 0, 1
-        outline_color: 1, 1, 1, 1
-        outline_width: 2
-        #bold: True
+    Image:
+        id: right_arrow_symbol
+        size_hint: (0.125, 0.125)
+        source: 'right_arrow_symbol.png'
+        pos_hint: {'center_x': 0.93, 'center_y': 0.495}
 
-    Label:
-        id: right_arrow
-        text: '>'
-        font_size: '100sp'
-        size_hint: (None, None)
-        pos_hint: {'center_x': 0.93, 'center_y': 0.5}
-        color: 1, 0, 0, 1
-        outline_color: 1, 1, 1, 1
-        outline_width: 2
-        #bold: True
+    Image:
+        id: left_arrow_symbol
+        size_hint: (0.125, 0.125)
+        source: 'left_arrow_symbol.png'
+        pos_hint: {'center_x': 0.07, 'center_y': 0.495}
+
 
     Label:
         id: insert_label
@@ -99,6 +90,7 @@
         outline_width: 2
         bold: True
 
+
 <LeftScreen>:
     on_enter: root.start_clock()
     name: 'left'
@@ -120,15 +112,35 @@
         pos_hint: {'center_x': .5, 'center_y': .3}
         color: 1, 1, 1, 0.75
 
+    Image:
+        id: img3
+        size_hint: (0.135, 0.135)
+        source: 'backspace_symbol.png'
+        pos_hint: {'center_x': .3, 'center_y': .3}
+        color: 1, 1, 1, .5
+
+    Image:
+        id: right_arrow_symbol
+        size_hint: (0.125, 0.125)
+        source: 'right_arrow_symbol.png'
+        pos_hint: {'center_x': 0.85, 'center_y': 0.3}
+
+    Image:
+        id: left_arrow_symbol
+        size_hint: (0.125, 0.125)
+        source: 'left_arrow_symbol.png'
+        pos_hint: {'center_x': 0.15, 'center_y': 0.3}
+
+
     Label:
         id: letter_1
         text: ''
-        font_size: '140sp'
+        font_size: '144sp'
         size_hint: (None, None)
         pos_hint: {'center_x': 0.4, 'top': 0.35}
         color: 1, 0, 0, 0.75  # Red label color
         outline_color: 1, 1, 1, 0.75  # White outline color
-        outline_width: 3
+        outline_width: 4
         bold: True
 
     Label:
@@ -139,18 +151,40 @@
         pos_hint: {'center_x': 0.5, 'top': 0.35}
         color: 1, 0, 0, 1
         outline_color: 1, 1, 1, 1
-        outline_width: 3
+        outline_width: 4
         bold: True
 
     Label:
         id: letter_3
         text: 'B'
-        font_size: '140sp'
+        font_size: '144sp'
         size_hint: (None, None)
         pos_hint: {'center_x': 0.6, 'top': 0.35}
         color: 1, 0, 0, 0.75
         outline_color: 1, 1, 1, 0.75
-        outline_width: 2
+        outline_width: 4
+        bold: True
+
+    Label:
+        id: letter_4
+        text: ''
+        font_size: '115.2sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.3, 'top': 0.35}
+        color: 1, 0, 0, 0.5
+        outline_color: 1, 1, 1, 0.5
+        outline_width: 4
+        bold: True
+
+    Label:
+        id: letter_5
+        text: 'C'
+        font_size: '115.2sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': 0.7, 'top': 0.35}
+        color: 1, 0, 0, 0.5
+        outline_color: 1, 1, 1, 0.5
+        outline_width: 4
         bold: True
 
     Label:
@@ -164,6 +198,23 @@
         outline_width: 2
         bold: True
 
+    Label:
+        id: controls_label
+        text: 'select      symbol when you are done'
+        font_size: '40sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': .5, 'center_y': .1}
+        color: 1, 0, 0, 1
+        outline_color: 1, 1, 1, 1
+        outline_width: 2
+        bold: True
+
+    Image:
+        id: label_e_symbol
+        size_hint: (0.04, 0.04)
+        source: 'enter_symbol.png'
+        pos_hint: {'center_x': .4025, 'center_y': .1}
+        color: 1, 1, 1, 1
 
     Label:
         id: score_label
@@ -213,3 +264,41 @@
 
     FloatLayout:
         size_hint: None, None
+
+
+
+<PlacementScreen>:
+    on_enter: root.start_clock()
+    name: 'placement'
+
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 1  # Black background color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        size_hint: None, None
+
+    Label:
+        id: score_label
+        text: 'Congratulations, you placed'
+        font_size: '100sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': .5, "center_y":0.875}
+        color: 1, 0, 0, 1  # Red label color
+        outline_color: 1, 1, 1, 1  # White outline color
+        outline_width: 3
+        bold: True
+
+    Label:
+        id: placement_label
+        text: ''
+        font_size: '200sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': .5, "center_y":0.5}
+        color: 1, 0, 0, 1  # Red label color
+        outline_color: 1, 1, 1, 1  # White outline color
+        outline_width: 3
+        bold: True

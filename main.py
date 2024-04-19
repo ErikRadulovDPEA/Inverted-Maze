@@ -2,16 +2,12 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
-from kivy.graphics import Color, BoxShadow
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.animation import Animation
-from kivy import *
-from pidev.kivy import DPEAButton
 from time import time
-from dpea_p2p import server
 from threading import Thread
 from server import Maze_Server
 import subprocess
@@ -34,8 +30,7 @@ SCREEN_MANAGER = ScreenManager()
 MAIN_SCREEN_NAME = 'main'
 RIGHT_SCREEN_NAME = 'right'
 LEFT_SCREEN_NAME = 'left'
-
-
+PLACEMENT_SCREEN_NAME = 'placement'
 
 
 def run_switch():
@@ -52,7 +47,7 @@ server_thread = Thread(target=run_switch, daemon=True, name='Server Thread').sta
 
 """variables and class declarations"""
 level = 1
-alphabet_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
+alphabet_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ  "
 abc = 0
 letter = 0
 name_letters = ""
@@ -102,6 +97,7 @@ class MainScreen(Screen):
         self.capture = load_video_from_start()
         self.reset_image()  # sets image to start frame
         self.timer = False
+        self.start_time = 0
         self.start = True
         Clock.schedule_interval(self.update, 1.0 / 30.0)
 
@@ -112,15 +108,15 @@ class MainScreen(Screen):
         self.ids.img2.texture = texture
 
     def level_transition(self, direction):
-        anim3 = Animation(font_size=110, duration=0.05)
+        anim3 = Animation(size_hint=(0.115, 0.115), duration=0.05)
         if direction == "left":
-            arrow = self.ids.left_arrow
+            arrow = self.ids.left_arrow_symbol
             setattr(self.ids.img1, 'x', -1920)
             setattr(self.ids.img2, 'x', 0)
             anim1 = Animation(x=0, duration=.2)
             anim2 = Animation(x=1920, duration=.2)
         if direction == "right":
-            arrow = self.ids.right_arrow
+            arrow = self.ids.right_arrow_symbol
             setattr(self.ids.img1, 'x', 1920)
             setattr(self.ids.img2, 'x', 0)
             anim1 = Animation(x=0, duration=.2)
@@ -128,7 +124,7 @@ class MainScreen(Screen):
         anim1.start(self.ids.img1)
         anim2.start(self.ids.img2)
         anim3.start(arrow)
-        anim3.bind(on_complete=lambda *args: Animation(font_size=100, duration=0.05).start(arrow))
+        anim3.bind(on_complete=lambda *args: Animation(size_hint=(0.125, 0.125), duration=0.05).start(arrow))
         anim1.bind(on_complete=lambda *args: setattr(self, 'play_video', True))
 
     def update(self, dt):
@@ -158,7 +154,7 @@ class MainScreen(Screen):
 
             if s.ball_insert:
                 level = s.level % 5
-                if s.level == 0:
+                if level == 0:
                     level = 5
                 if self.start:  # begin ready go
                     self.start = False
@@ -175,8 +171,10 @@ class MainScreen(Screen):
                     Clock.schedule_once(lambda *args: setattr(label, 'text', 'Go!'), 1)
                     Clock.schedule_once(lambda *args: setattr(label, 'text', ''), 2)
                     Clock.schedule_once(lambda *args: setattr(self, 'timer', True), 2)
+                    Clock.schedule_once(lambda *args: setattr(self, 'start_time', time()), 2)
                 if self.timer:
-                    self.ids.time_label.text = format(time() - s.maze_time, '.2f')
+                    minutes, seconds = divmod(time() - self.start_time, 60)
+                    self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
                 self.ids.level_label.text = ''
                 self.ids.insert_label.text = ''
                 if s.maze_end_flag:
@@ -184,14 +182,20 @@ class MainScreen(Screen):
                     self.start = True
                     self.play_video = False
                     s.ball_insert = False
-                    SCREEN_MANAGER.transition = NoTransition()
-                    SCREEN_MANAGER.current = LEFT_SCREEN_NAME
+                    if high_score.in_top_ten(level, s.maze_time):
+                        SCREEN_MANAGER.transition = NoTransition()
+                        SCREEN_MANAGER.current = LEFT_SCREEN_NAME
+                    else:
+                        SCREEN_MANAGER.transition = NoTransition()
+                        SCREEN_MANAGER.current = PLACEMENT_SCREEN_NAME
+
 
     # def red_button(self):  # temp kivy button
     #     s.but1_presses = True
     #
     # def blue_button(self):  # temp kivy button
-    #     s.but2_presses = True
+    #     SCREEN_MANAGER.transition = NoTransition()
+    #     SCREEN_MANAGER.current = PLACEMENT_SCREEN_NAME
 
     def convert_to_texture(self, frame):
         global level
@@ -240,21 +244,12 @@ class MainScreen(Screen):
         s.maze_end_flag = False
         self.play_video = True
 
-    @staticmethod
-    def switch_to_left():
-        SCREEN_MANAGER.transition.direction = "right"
-        SCREEN_MANAGER.current = LEFT_SCREEN_NAME
-
-    @staticmethod
-    def switch_to_right():
-        SCREEN_MANAGER.transition.direction = "left"
-        SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
-
 
 class RightScreen(Screen):
     def switch_screen(self, dt):
         global auto_switch_screens
         if s.check_button_presses(1) or s.check_button_presses(2) or s.check_button_presses(3):
+            self.clear_widgets()
             Clock.unschedule(auto_switch_screens)
             Clock.unschedule(self.switch_screen)
             reset_button_states()
@@ -267,9 +262,12 @@ class RightScreen(Screen):
         Clock.schedule_interval(self.switch_screen, .2)
         auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 30)
 
+    def high_score_animation(self, label, delay):
+        anim = Animation(x=960 - label.width / 2, duration=0.5, t='out_expo')
+        Clock.schedule_once(lambda dt: anim.start(label), delay / 6)
+
     def update_high_scores(self):
         global level
-        self.clear_widgets()
         self.add_widget(Label(
             text=f'Level {level} High Scores',
             font_size=75,
@@ -290,26 +288,31 @@ class RightScreen(Screen):
                         size=(1000, 100),
                         allow_stretch=True,
                         keep_ratio=False,
-                        color=(1, 1, 1, 0.4),
+                        color=(1, 1, 1, 0),
                         pos_hint={'center_x': 0.5, 'top': y}
                     )
+                    anim = Animation(color=(1, 1, 1, 0.4), duration=0.5)
+                    Clock.schedule_once(lambda dt: anim.start(img), 2)
                     self.add_widget(img)
-                self.add_widget(Label(
-                    text=f"{i + 1}. {score['name']} {format(score['time'], '.2f')}",  # formatted to keep trailing zero
-                    pos_hint={'center_x': 0.5, 'top': y},
+                label = Label(
+                    text=f"{i + 1}. {score['name']} {int(divmod(score['time'], 60)[0])}:{divmod(score['time'], 60)[1]:05.2f}",  # formatted to keep trailing zero
+                    pos_hint={'top': y},
+                    pos=(960*3, 0),
                     size_hint=(None, None),
                     color=(1, 0, 0, 1),
                     outline_color=(1, 1, 1, 1),
                     outline_width=3,
                     bold=True,
                     font_size=60
-                ))
+                )
+                self.add_widget(label)
+                self.high_score_animation(label, i)
             y -= 0.075
             if i == 9:
                 break
         self.add_widget(Label(
             text="press any button to continue",
-            pos_hint={'center_x': 0.5, 'top': y},
+            pos_hint={'center_x': 0.5, 'top': 0.1},
             size_hint=(None, None),
             color=(1, 0, 0, 1),
             outline_color=(1, 1, 1, 1),
@@ -322,22 +325,38 @@ class RightScreen(Screen):
 class LeftScreen(Screen):
     def start_clock(self):
         reset_button_states()
-        self.ids.time_label.text = format(s.maze_time, '.2f')
+        minutes, seconds = divmod(s.maze_time, 60)
+        self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
         Clock.schedule_interval(self.change_letter, 1.0 / 30.0)
+
+    def arrow_animation(self, direction):
+        anim = Animation(size_hint=(0.115, 0.115), duration=0.05)
+        if direction == "left":
+            arrow = self.ids.left_arrow_symbol
+        if direction == "right":
+            arrow = self.ids.right_arrow_symbol
+        anim.start(arrow)
+        anim.bind(on_complete=lambda *args: Animation(size_hint=(0.125, 0.125), duration=0.05).start(arrow))
 
     def change_letter(self, dt):
         global alphabet_list, abc, letter, name_letters, level
         if s.check_button_presses(1):  # left button pressed
             abc = abc - 1
+            self.arrow_animation("left")
         if s.check_button_presses(2):  # right button pressed
             abc = abc + 1
+            self.arrow_animation("right")
         if s.check_button_presses(3):  # middle button pressed
-            if abc % 27 != 26:  # if not enter symbol selected
-                name_letters += alphabet_list[abc % 27]
+            if abc % 28 != 27 and abc % 28 != 26 and letter <= 30:  # if not enter symbol selected(and letter limit)
+                name_letters += alphabet_list[abc % 28]
                 self.ids.name_label.text = name_letters
                 letter += 1
-            if abc % 27 == 26 and letter != 0:  # if enter symbol selected
-                if bool(predict([name_letters])) or letter >= 30:  # profanity filter and letter limit
+            if abc % 28 == 26 and letter > 0:  # if backspace selected
+                name_letters = name_letters[:-1]
+                self.ids.name_label.text = name_letters
+                letter -= 1
+            if abc % 28 == 27 and letter != 0:  # if enter symbol selected
+                if bool(predict([name_letters])):  # profanity filter
                     letter = 0
                     abc = 0
                     name_letters = ""
@@ -351,21 +370,73 @@ class LeftScreen(Screen):
                     Clock.unschedule(self.change_letter)
                     SCREEN_MANAGER.transition = NoTransition()
                     SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
-        if abc % 27 == 26:  # enter symbol is in the middle
-            self.ids.img2.pos_hint = {"center_x": 0.5}
-            self.ids.img2.color = 1, 1, 1, 1
-        elif abc % 27 == 0:  # enter symbol is in on the left
+        if abc % 28 == 1:  # enter symbol is on the far left
+            self.ids.img2.pos_hint = {"center_x": 0.3}
+            self.ids.img2.color = 1, 1, 1, .5
+            self.ids.img2.size_hint = (.135, .135)
+            self.ids.img3.pos_hint = {"center_x": 2}
+        elif abc % 28 == 0:  # enter symbol is on the mid left
             self.ids.img2.pos_hint = {"center_x": 0.4}
             self.ids.img2.color = 1, 1, 1, .75
-        elif abc % 27 == 25:  # enter symbol is in on the right
+            self.ids.img2.size_hint = (.15, .15)
+            self.ids.img3.pos_hint = {"center_x": 0.3}
+            self.ids.img3.color = 1, 1, 1, .5
+            self.ids.img3.size_hint = (.135, .135)
+        elif abc % 28 == 27:  # enter symbol is in the middle
+            self.ids.img2.pos_hint = {"center_x": 0.5}
+            self.ids.img2.color = 1, 1, 1, 1
+            self.ids.img2.size_hint = (.165, .165)
+            self.ids.img3.pos_hint = {"center_x": 0.4}
+            self.ids.img3.color = 1, 1, 1, .75
+            self.ids.img3.size_hint = (.15, .15)
+        elif abc % 28 == 26:  # enter symbol is on the mid right
             self.ids.img2.pos_hint = {"center_x": 0.6}
             self.ids.img2.color = 1, 1, 1, .75
+            self.ids.img2.size_hint = (.15, .15)
+            self.ids.img3.pos_hint = {"center_x": 0.5}
+            self.ids.img3.color = 1, 1, 1, 1
+            self.ids.img3.size_hint = (.165, .165)
+        elif abc % 28 == 25:  # enter symbol is on the far right
+            self.ids.img2.pos_hint = {"center_x": 0.7}
+            self.ids.img2.color = 1, 1, 1, .5
+            self.ids.img2.size_hint = (.135, .135)
+            self.ids.img3.pos_hint = {"center_x": 0.6}
+            self.ids.img3.color = 1, 1, 1, .75
+            self.ids.img3.size_hint = (.15, .15)
+        elif abc % 28 == 24:  # backspace symbol is on the far right
+            self.ids.img3.pos_hint = {"center_x": 0.7}
+            self.ids.img3.color = 1, 1, 1, .5
+            self.ids.img3.size_hint = (.135, .135)
+            self.ids.img2.pos_hint = {"center_x": 2}
         else:
-            self.ids.img2.pos_hint = {"center_x": 2}  # enter symbol is not on screen
-        self.ids.letter_1.text = alphabet_list[(abc - 1) % 27]
-        self.ids.letter_2.text = alphabet_list[abc % 27]
-        self.ids.letter_3.text = alphabet_list[(abc + 1) % 27]
+            self.ids.img2.pos_hint = {"center_x": 2}  # enter and backspace symbol is not on screen
+            self.ids.img3.pos_hint = {"center_x": 2}
+        self.ids.letter_1.text = alphabet_list[(abc - 1) % 28]
+        self.ids.letter_2.text = alphabet_list[abc % 28]
+        self.ids.letter_3.text = alphabet_list[(abc + 1) % 28]
+        self.ids.letter_4.text = alphabet_list[(abc - 2) % 28]
+        self.ids.letter_5.text = alphabet_list[(abc + 2) % 28]
 
+        # self.ids.pos_marker.text = str(abc % 28)
+
+
+class PlacementScreen(Screen):
+    def switch_screen(self, dt):
+        global auto_switch_screens
+        if s.check_button_presses(1) or s.check_button_presses(2) or s.check_button_presses(3):
+            Clock.unschedule(auto_switch_screens)
+            Clock.unschedule(self.switch_screen)
+            reset_button_states()
+            SCREEN_MANAGER.transition = NoTransition()
+            SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
+
+    def start_clock(self):
+        global auto_switch_screens, level
+        reset_button_states()
+        high_score.add_score("", s.maze_time, level)
+        self.ids.placement_label.text = f"{high_score.get_placement(level, s.maze_time)}th"
+        Clock.schedule_interval(self.switch_screen, .2)
+        auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 30)
 
 """
 Widget additions
@@ -375,6 +446,7 @@ Builder.load_file('VideoApp.kv')
 SCREEN_MANAGER.add_widget(MainScreen(name=MAIN_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(RightScreen(name=RIGHT_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(LeftScreen(name=LEFT_SCREEN_NAME))
+SCREEN_MANAGER.add_widget(PlacementScreen(name=PLACEMENT_SCREEN_NAME))
 
 if __name__ == "__main__":
     ProjectNameGUI().run()
