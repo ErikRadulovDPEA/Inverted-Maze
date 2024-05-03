@@ -15,6 +15,7 @@ from high_scores import HighScore
 import cv2
 import atexit
 from profanity_check import predict
+from kivy.core.audio import SoundLoader
 
 Window.fullscreen = 'auto'
 Window.show_cursor = False
@@ -85,6 +86,23 @@ def reset_button_states():
     s.but3_presses = False
 
 
+def play_sound(action):
+    if action == "navigate":
+        sound = SoundLoader.load('sounds/navigate_sound.wav')
+    if action == "ready":
+        sound = SoundLoader.load('sounds/ready_sound.wav')
+    if action == "go":
+        sound = SoundLoader.load('sounds/go_sound.wav')
+    if action == "undo":
+        sound = SoundLoader.load('sounds/undo_sound.wav')
+    if action == "select":
+        sound = SoundLoader.load('sounds/select_sound.wav')
+    if action == "victory":
+        sound = SoundLoader.load('sounds/victory_sound.wav')
+    sound.stop()
+    sound.play()
+
+
 class MainScreen(Screen):
     """
     Class to handle the main screen and its associated touch events
@@ -99,7 +117,7 @@ class MainScreen(Screen):
         self.timer = False
         self.start_time = 0
         self.start = True
-        Clock.schedule_interval(self.update, 1.0 / 30.0)
+        Clock.schedule_interval(self.update, 1.0 / 60.0)
 
     def reset_image(self):
         _, frame = self.capture.read()
@@ -132,8 +150,10 @@ class MainScreen(Screen):
         if self.play_video:
             if s.check_button_presses(1) and not s.ball_insert:
                 s.level -= 1
+                play_sound("navigate")
             if s.check_button_presses(2) and not s.ball_insert:
                 s.level += 1
+                play_sound("navigate")
             if level > s.level and not s.ball_insert:
                 self.play_video = False
                 self.level_transition("left")
@@ -151,13 +171,13 @@ class MainScreen(Screen):
                 return
             texture = self.convert_to_texture(frame)
             self.ids.img1.texture = texture
-
             if s.ball_insert:
                 level = s.level % 5
                 if level == 0:
                     level = 5
                 if self.start:  # begin ready go
                     self.start = False
+                    play_sound("ready")
                     label = Label(text='Ready?',
                                   font_size=125,
                                   size_hint=(None, None),
@@ -169,15 +189,22 @@ class MainScreen(Screen):
                                   )
                     self.add_widget(label)
                     Clock.schedule_once(lambda *args: setattr(label, 'text', 'Go!'), 1)
+                    Clock.schedule_once(lambda *args: play_sound("go"), 1)
                     Clock.schedule_once(lambda *args: setattr(label, 'text', ''), 2)
                     Clock.schedule_once(lambda *args: setattr(self, 'timer', True), 2)
                     Clock.schedule_once(lambda *args: setattr(self, 'start_time', time()), 2)
                 if self.timer:
                     minutes, seconds = divmod(time() - self.start_time, 60)
-                    self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
+                    if minutes != 0:
+                        self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
+                    else:
+                        self.ids.time_label.text = f"{seconds:5.2f}"
                 self.ids.level_label.text = ''
                 self.ids.insert_label.text = ''
+                self.ids.right_arrow_symbol.color = (1, 1, 1, 0)
+                self.ids.left_arrow_symbol.color = (1, 1, 1, 0)
                 if s.maze_end_flag:
+                    play_sound("victory")
                     self.timer = False
                     self.start = True
                     self.play_video = False
@@ -188,7 +215,6 @@ class MainScreen(Screen):
                     else:
                         SCREEN_MANAGER.transition = NoTransition()
                         SCREEN_MANAGER.current = PLACEMENT_SCREEN_NAME
-
 
     # def red_button(self):  # temp kivy button
     #     s.but1_presses = True
@@ -240,6 +266,8 @@ class MainScreen(Screen):
         s.level = 1
         self.ids.insert_label.text = 'Insert ball to start'
         self.ids.time_label.text = ''
+        self.ids.right_arrow_symbol.color = (1, 1, 1, 1)
+        self.ids.left_arrow_symbol.color = (1, 1, 1, 1)
         s.ball_insert = False
         s.maze_end_flag = False
         self.play_video = True
@@ -249,6 +277,7 @@ class RightScreen(Screen):
     def switch_screen(self, dt):
         global auto_switch_screens
         if s.check_button_presses(1) or s.check_button_presses(2) or s.check_button_presses(3):
+            play_sound("navigate")
             self.clear_widgets()
             Clock.unschedule(auto_switch_screens)
             Clock.unschedule(self.switch_screen)
@@ -259,7 +288,8 @@ class RightScreen(Screen):
     def start_clock(self):
         global auto_switch_screens
         reset_button_states()
-        Clock.schedule_interval(self.switch_screen, .2)
+        Clock.schedule_once(lambda *args: Clock.schedule_interval(self.switch_screen, .2), 2)
+        # Clock.schedule_interval(self.switch_screen, .2)
         auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 30)
 
     def high_score_animation(self, label, delay):
@@ -292,12 +322,17 @@ class RightScreen(Screen):
                         pos_hint={'center_x': 0.5, 'top': y}
                     )
                     anim = Animation(color=(1, 1, 1, 0.4), duration=0.5)
-                    Clock.schedule_once(lambda dt: anim.start(img), 2)
+                    Clock.schedule_once(lambda dt: anim.start(img), 1.5)
                     self.add_widget(img)
+                minutes, seconds = divmod(score["time"], 60)
+                if minutes != 0:
+                    text = f"{i + 1}. {score['name']} {int(minutes)}:{seconds:05.2f}"
+                else:
+                    text = f"{i + 1}. {score['name']} {seconds:5.2f}"
                 label = Label(
-                    text=f"{i + 1}. {score['name']} {int(divmod(score['time'], 60)[0])}:{divmod(score['time'], 60)[1]:05.2f}",  # formatted to keep trailing zero
+                    text=text,
                     pos_hint={'top': y},
-                    pos=(960*3, 0),
+                    pos=(960 * 3, 0),
                     size_hint=(None, None),
                     color=(1, 0, 0, 1),
                     outline_color=(1, 1, 1, 1),
@@ -316,7 +351,7 @@ class RightScreen(Screen):
             size_hint=(None, None),
             color=(1, 0, 0, 1),
             outline_color=(1, 1, 1, 1),
-            outline_width=3,
+            outline_width=2,
             bold=True,
             font_size=45
         ))
@@ -326,7 +361,10 @@ class LeftScreen(Screen):
     def start_clock(self):
         reset_button_states()
         minutes, seconds = divmod(s.maze_time, 60)
-        self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
+        if minutes != 0:
+            self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
+        else:
+            self.ids.time_label.text = f"{seconds:5.2f}"
         Clock.schedule_interval(self.change_letter, 1.0 / 30.0)
 
     def arrow_animation(self, direction):
@@ -342,26 +380,32 @@ class LeftScreen(Screen):
         global alphabet_list, abc, letter, name_letters, level
         if s.check_button_presses(1):  # left button pressed
             abc = abc - 1
+            play_sound("navigate")
             self.arrow_animation("left")
         if s.check_button_presses(2):  # right button pressed
             abc = abc + 1
+            play_sound("navigate")
             self.arrow_animation("right")
         if s.check_button_presses(3):  # middle button pressed
             if abc % 28 != 27 and abc % 28 != 26 and letter <= 30:  # if not enter symbol selected(and letter limit)
+                play_sound("select")
                 name_letters += alphabet_list[abc % 28]
                 self.ids.name_label.text = name_letters
                 letter += 1
             if abc % 28 == 26 and letter > 0:  # if backspace selected
+                play_sound("undo")
                 name_letters = name_letters[:-1]
                 self.ids.name_label.text = name_letters
                 letter -= 1
             if abc % 28 == 27 and letter != 0:  # if enter symbol selected
                 if bool(predict([name_letters])):  # profanity filter
+                    play_sound("undo")
                     letter = 0
                     abc = 0
                     name_letters = ""
                     self.ids.name_label.text = ''
                 else:
+                    play_sound("select")
                     high_score.add_score(name_letters, s.maze_time, level)
                     letter = 0
                     abc = 0
@@ -370,41 +414,41 @@ class LeftScreen(Screen):
                     Clock.unschedule(self.change_letter)
                     SCREEN_MANAGER.transition = NoTransition()
                     SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
-        if abc % 28 == 1:  # enter symbol is on the far left
+        if abc % 28 == 1:  # enter symbol is far left bs is offscreen
             self.ids.img2.pos_hint = {"center_x": 0.3}
             self.ids.img2.color = 1, 1, 1, .5
             self.ids.img2.size_hint = (.135, .135)
             self.ids.img3.pos_hint = {"center_x": 2}
-        elif abc % 28 == 0:  # enter symbol is on the mid left
+        elif abc % 28 == 0:  # enter symbol is on the mid left bs is far left
             self.ids.img2.pos_hint = {"center_x": 0.4}
             self.ids.img2.color = 1, 1, 1, .75
             self.ids.img2.size_hint = (.15, .15)
-            self.ids.img3.pos_hint = {"center_x": 0.3}
+            self.ids.img3.pos_hint = {"center_x": 0.29}
             self.ids.img3.color = 1, 1, 1, .5
             self.ids.img3.size_hint = (.135, .135)
         elif abc % 28 == 27:  # enter symbol is in the middle
             self.ids.img2.pos_hint = {"center_x": 0.5}
             self.ids.img2.color = 1, 1, 1, 1
             self.ids.img2.size_hint = (.165, .165)
-            self.ids.img3.pos_hint = {"center_x": 0.4}
+            self.ids.img3.pos_hint = {"center_x": 0.39}
             self.ids.img3.color = 1, 1, 1, .75
             self.ids.img3.size_hint = (.15, .15)
         elif abc % 28 == 26:  # enter symbol is on the mid right
             self.ids.img2.pos_hint = {"center_x": 0.6}
             self.ids.img2.color = 1, 1, 1, .75
             self.ids.img2.size_hint = (.15, .15)
-            self.ids.img3.pos_hint = {"center_x": 0.5}
+            self.ids.img3.pos_hint = {"center_x": 0.49}
             self.ids.img3.color = 1, 1, 1, 1
             self.ids.img3.size_hint = (.165, .165)
         elif abc % 28 == 25:  # enter symbol is on the far right
             self.ids.img2.pos_hint = {"center_x": 0.7}
             self.ids.img2.color = 1, 1, 1, .5
             self.ids.img2.size_hint = (.135, .135)
-            self.ids.img3.pos_hint = {"center_x": 0.6}
+            self.ids.img3.pos_hint = {"center_x": 0.59}
             self.ids.img3.color = 1, 1, 1, .75
             self.ids.img3.size_hint = (.15, .15)
         elif abc % 28 == 24:  # backspace symbol is on the far right
-            self.ids.img3.pos_hint = {"center_x": 0.7}
+            self.ids.img3.pos_hint = {"center_x": 0.69}
             self.ids.img3.color = 1, 1, 1, .5
             self.ids.img3.size_hint = (.135, .135)
             self.ids.img2.pos_hint = {"center_x": 2}
@@ -424,6 +468,7 @@ class PlacementScreen(Screen):
     def switch_screen(self, dt):
         global auto_switch_screens
         if s.check_button_presses(1) or s.check_button_presses(2) or s.check_button_presses(3):
+            play_sound("navigate")
             Clock.unschedule(auto_switch_screens)
             Clock.unschedule(self.switch_screen)
             reset_button_states()
@@ -432,11 +477,33 @@ class PlacementScreen(Screen):
 
     def start_clock(self):
         global auto_switch_screens, level
+        minutes, seconds = divmod(s.maze_time, 60)
+        if minutes != 0:
+            self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
+        else:
+            self.ids.time_label.text = f"{seconds:5.2f}"
         reset_button_states()
         high_score.add_score("", s.maze_time, level)
-        self.ids.placement_label.text = f"{high_score.get_placement(level, s.maze_time)}th"
-        Clock.schedule_interval(self.switch_screen, .2)
-        auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 30)
+        placement = high_score.get_placement(level, s.maze_time)
+        if placement % 10 == 1 and placement != 11:
+            self.ids.placement_label.text = f"{placement}st"
+        if placement % 10 == 2 and placement != 12:
+            self.ids.placement_label.text = f"{placement}nd"
+        if placement % 10 == 3 and placement != 13:
+            self.ids.placement_label.text = f"{placement}rd"
+        else:
+            self.ids.placement_label.text = f"{placement}th"
+        Clock.schedule_once(lambda *args: Clock.schedule_interval(self.switch_screen, .2), 1)
+        auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 7.5)
+        self.placement_animation()
+
+    def placement_animation(self):
+        anim1 = Animation(font_size=220, duration=0.125)
+        anim2 = Animation(outline_width=4, duration=0.125)
+        anim3 = Animation(font_size=200, duration=0.05)
+        anim_group = anim1 & anim2 + anim3
+        anim_group.start(self.ids.placement_label)
+
 
 """
 Widget additions

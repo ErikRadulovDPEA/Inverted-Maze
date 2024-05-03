@@ -116,7 +116,7 @@
         id: img3
         size_hint: (0.135, 0.135)
         source: 'backspace_symbol.png'
-        pos_hint: {'center_x': .3, 'center_y': .3}
+        pos_hint: {'center_x': .29, 'center_y': .3}
         color: 1, 1, 1, .5
 
     Image:
@@ -201,7 +201,7 @@
     Label:
         id: controls_label
         text: 'select      symbol when you are done'
-        font_size: '40sp'
+        font_size: '50sp'
         size_hint: (None, None)
         pos_hint: {'center_x': .5, 'center_y': .1}
         color: 1, 0, 0, 1
@@ -213,7 +213,7 @@
         id: label_e_symbol
         size_hint: (0.04, 0.04)
         source: 'enter_symbol.png'
-        pos_hint: {'center_x': .4025, 'center_y': .1}
+        pos_hint: {'center_x': .38, 'center_y': .1}
         color: 1, 1, 1, 1
 
     Label:
@@ -286,7 +286,7 @@
         text: 'Congratulations, you placed'
         font_size: '100sp'
         size_hint: (None, None)
-        pos_hint: {'center_x': .5, "center_y":0.875}
+        pos_hint: {'center_x': .5, "center_y":0.75}
         color: 1, 0, 0, 1  # Red label color
         outline_color: 1, 1, 1, 1  # White outline color
         outline_width: 3
@@ -295,9 +295,20 @@
     Label:
         id: placement_label
         text: ''
-        font_size: '200sp'
+        font_size: '0sp'
         size_hint: (None, None)
-        pos_hint: {'center_x': .5, "center_y":0.5}
+        pos_hint: {'center_x': .5, "center_y":0.45}
+        color: 1, 0, 0, 1  # Red label color
+        outline_color: 1, 1, 1, 1  # White outline color
+        outline_width: 0
+        bold: True
+
+    Label:
+        id: time_label
+        text: ''
+        font_size: '80sp'
+        size_hint: (None, None)
+        pos_hint: {'center_x': .5, "center_y":0.85}
         color: 1, 0, 0, 1  # Red label color
         outline_color: 1, 1, 1, 1  # White outline color
         outline_width: 3
