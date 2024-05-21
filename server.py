@@ -79,15 +79,13 @@ class Maze_Server:
         except Exception as err:
             raise err
 
-    def check_button_state(self, but_num):
-        if but_num == 1:
-            return self.but1_state
-        elif but_num == 2:
-            return self.but2_state
-        elif but_num == 3:
-            return self.but3_state
-        else:
-            return 0
+    def reset_button_states(self):
+        self.but1_state = False
+        self.but2_state = False
+        self.but3_state = False
+        self.but1_presses = False
+        self.but2_presses = False
+        self.but3_presses = False
 
     def check_button_presses(self, but_num):
         if but_num == 1:
