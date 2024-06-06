@@ -1,0 +1,76 @@
+<AdminScreen>:
+    name: 'admin'
+    FloatLayout:
+        size_hint: None, None
+
+    DPEAButton:
+        #Go back button
+        size: 175, 100
+        pos_hint: {'center_x': 0.85, 'center_y': 0.85}
+        color: 0.035, 0.152, 0.725, 1
+
+        text: "Go back"
+        on_press: root.transition_back()
+
+    # volume slider
+    Label:
+        id: volume_label
+        text: "Volume"
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': .65}
+        font_size: '50sp'
+        color: 0, 0, 0, 1
+
+
+    CustomSlider:
+        id: vol_slider
+        my_id: 'vol_slider'
+        orientation: 'horizontal'
+        min: 0
+        max: 63
+        value: 31
+        step: 1
+        size_hint: None, None
+        size: 0.8 * root.width, 50
+        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
+        sensitivity: 'handle'
+        value_track: True
+        value_track_color: 0, 0, 0, 1
+
+    Label:
+        id: value_label
+        text: str(int(vol_slider.value))
+        size_hint: None, None
+        pos_hint: {'left': vol_slider.right + 10, 'center_y': 0.6}
+        font_size: '50sp'
+        color: 0, 0, 0, 1
+
+    # led brightness slider (not working, to change brightness look in client.py)
+#    Label:
+#        text: "LED Brightness"
+#        size_hint: None, None
+#        pos_hint: {'center_x': 0.5, 'center_y': .45}
+#        font_size: '50sp'
+#        color: 0, 0, 0, 1
+#
+#    CustomSlider:
+#        id: led_slider
+#        my_id: 'led_slider'
+#        orientation: 'horizontal'
+#        min: 0
+#        max: 255
+#        value: 16
+#        step: 1
+#        size_hint: None, None
+#        size: 0.8 * root.width, 50
+#        pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+#        #on_touch_up: root.set_led_brightness(self.value)
+#        sensitivity: 'handle'
+#
+#    Label:
+#        id: led_value_label
+#        text: str(int(led_slider.value))
+#        size_hint: None, None
+#        pos_hint: {'left': led_slider.right + 10, 'center_y': 0.4}
+#        font_size: '50sp'
+#        color: 0, 0, 0, 1

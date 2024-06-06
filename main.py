@@ -1,3 +1,4 @@
+import os
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -7,6 +8,8 @@ from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.animation import Animation
+from kivy.uix.slider import Slider
+from pidev.kivy.PassCodeScreen import PassCodeScreen
 from time import time
 from threading import Thread
 from server import Maze_Server
@@ -16,10 +19,11 @@ import cv2
 import atexit
 from profanity_check import predict
 from kivy.core.audio import SoundLoader
+from pidev.kivy.DPEAButton import DPEAButton
+
 
 Window.fullscreen = 'auto'
 Window.show_cursor = False
-
 
 def cleanup():
     s.send_packet(1)
@@ -31,7 +35,7 @@ SCREEN_MANAGER = ScreenManager()
 MAIN_SCREEN_NAME = 'main'
 RIGHT_SCREEN_NAME = 'right'
 LEFT_SCREEN_NAME = 'left'
-PLACEMENT_SCREEN_NAME = 'placement'
+ADMIN_SCREEN_NAME = 'admin'
 
 
 def run_switch():
@@ -82,6 +86,35 @@ class ProjectNameGUI(App):
 Window.clearcolor = (1, 1, 1, 1)  # White
 
 
+def throttle(wait):
+
+    def decorator(fn):
+        last_call = [0.0]
+
+        def throttled(*args, **kwargs):
+            elapsed = time() - last_call[0]
+            if elapsed >= wait:
+                last_call[0] = time()
+                return fn(*args, **kwargs)
+
+        return throttled
+
+    return decorator
+
+
+class CustomSlider(Slider):
+    def on_touch_up(self, touch):
+        released = super(CustomSlider, self).on_touch_up(touch)
+        if released:
+            if self.my_id == 'vol_slider':
+                print("vol")
+                self.parent.set_volume(self.value)
+            # elif self.my_id == 'led_slider':
+            #     print("led")
+            #     self.parent.set_led_brightness(self.value)
+        return released
+
+
 def load_video_from_start():
     return cv2.VideoCapture(0)
 
@@ -106,6 +139,7 @@ class MainScreen(Screen):
         self.timer = False
         self.start_time = 0
         self.start = True
+        self.vol = 31
         Clock.schedule_interval(self.update, 1.0 / 60.0)
 
     def reset_image(self):
@@ -208,9 +242,9 @@ class MainScreen(Screen):
     # def red_button(self):  # temp kivy button
     #     s.but1_presses = True
     #
-    def blue_button(self):  # temp kivy button
-        SCREEN_MANAGER.transition = NoTransition()
-        SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
+    # def blue_button(self):  # temp kivy button
+    #     SCREEN_MANAGER.transition = NoTransition()
+    #     SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
 
     def convert_to_texture(self, frame):
         global level
@@ -249,7 +283,16 @@ class MainScreen(Screen):
         texture.blit_buffer(byte_buf, colorfmt='bgr', bufferfmt='ubyte')
         return texture
 
-    def start_video(self):
+    def admin_action(self):
+        """
+        Hidden admin button touch event. Transitions to passCodeScreen.
+        This method is called from pidev/kivy/PassCodeScreen.kv
+        :return: None
+        """
+        self.play_video = False
+        SCREEN_MANAGER.current = 'passCode'
+
+    def start_video(self):  # called on_enter in the kv file, so it starts every time the screen transitions here
         global level
         level = 1
         s.level = 1
@@ -298,14 +341,14 @@ class RightScreen(Screen):
             bold=True
         ))
         y = 0.85
+        if high_score.in_top_ten(level, s.maze_time):
+            font = 60
+            gap = 0.075
+        else:
+            high_score.add_score("", s.maze_time, level)
+            font = 52.5
+            gap = 0.0625
         for i, score in enumerate(high_score.scores[level]):
-            if high_score.in_top_ten(level, s.maze_time):
-                font = 60
-                gap = 0.075
-            else:
-                high_score.add_score("", s.maze_time, level)
-                font = 52.5
-                gap = 0.0625
             if i <= 9:
                 if score['time'] == s.maze_time:  # highlights last player who played
                     self.highlight_last_player(y)
@@ -326,7 +369,7 @@ class RightScreen(Screen):
                     self.high_score_animation(dot_label, i + 1)
                     y -= 0.0625
                     self.highlight_last_player(y)
-                    minutes, seconds = divmod(score["time"], 60)
+                    minutes, seconds = divmod(s.maze_time, 60)
                     placement = high_score.get_placement(level, s.maze_time)
                     if minutes != 0:
                         text = f"{placement}. YOU {int(minutes)}:{seconds:05.2f}"
@@ -452,7 +495,7 @@ class LeftScreen(Screen):
             self.update_img_pos(enter, 0, 0, 0)
             self.update_img_pos(backspace, .69, .5, .135)
         else:
-            self.update_img_pos(enter, 0, 0, 0)
+            self.update_img_pos(enter, 0, 0, 0)  # both offscreen
             self.update_img_pos(backspace, 0, 0, 0)
         self.ids.letter_1.text = alphabet_list[(abc - 1) % 28]
         self.ids.letter_2.text = alphabet_list[abc % 28]
@@ -465,48 +508,58 @@ class LeftScreen(Screen):
         img.color = 1, 1, 1, opacity
         img.size_hint = (size_hint, size_hint)
 
-        # self.ids.pos_marker.text = str(abc % 28)
 
+class AdminScreen(Screen):
+    """
+    Class to handle the AdminScreen and its functionality
+    """
 
-class PlacementScreen(Screen):
-    def switch_screen(self, dt):
-        global auto_switch_screens
-        if s.check_button_presses(1) or s.check_button_presses(2) or s.check_button_presses(3):
-            play_sound("navigate")
-            Clock.unschedule(auto_switch_screens)
-            Clock.unschedule(self.switch_screen)
-            s.reset_button_states()
-            SCREEN_MANAGER.transition = NoTransition()
-            SCREEN_MANAGER.current = RIGHT_SCREEN_NAME
+    def __init__(self, **kwargs):
+        """
+        Load the AdminScreen.kv file. Set the necessary names of the screens for the PassCodeScreen to transition to.
+        Lastly super Screen's __init__
+        :param kwargs: Normal kivy.uix.screenmanager.Screen attributes
+        """
+        Builder.load_file('AdminScreen.kv')
 
-    def start_clock(self):
-        global auto_switch_screens, level
-        minutes, seconds = divmod(s.maze_time, 60)
-        if minutes != 0:
-            self.ids.time_label.text = f"{int(minutes)}:{seconds:05.2f}"
-        else:
-            self.ids.time_label.text = f"{seconds:5.2f}"
-        s.reset_button_states()
-        high_score.add_score("", s.maze_time, level)
-        placement = high_score.get_placement(level, s.maze_time)
-        if placement % 10 == 1 and placement != 11:
-            self.ids.placement_label.text = f"{placement}st"
-        if placement % 10 == 2 and placement != 12:
-            self.ids.placement_label.text = f"{placement}nd"
-        if placement % 10 == 3 and placement != 13:
-            self.ids.placement_label.text = f"{placement}rd"
-        else:
-            self.ids.placement_label.text = f"{placement}th"
-        Clock.schedule_once(lambda *args: Clock.schedule_interval(self.switch_screen, .2), 1)
-        auto_switch_screens = Clock.schedule_once(lambda *args: setattr(s, 'but1_presses', True), 7.5)
-        self.placement_animation()
+        PassCodeScreen.set_admin_events_screen(
+            ADMIN_SCREEN_NAME)  # Specify screen name to transition to after correct password
+        PassCodeScreen.set_transition_back_screen(
+            MAIN_SCREEN_NAME)  # set screen name to transition to if "Back to Game is pressed"
 
-    def placement_animation(self):
-        anim1 = Animation(font_size=220, duration=0.125)
-        anim2 = Animation(outline_width=4, duration=0.125)
-        anim3 = Animation(font_size=200, duration=0.05)
-        anim_group = anim1 & anim2 + anim3
-        anim_group.start(self.ids.placement_label)
+        super(AdminScreen, self).__init__(**kwargs)
+
+    def set_volume(self, vol):
+        s.change_volume(vol)
+        play_sound("navigate")
+
+    @throttle(2.5)
+    def set_led_brightness(self, bright):
+        s.change_brightness(bright)
+
+    @staticmethod
+    def transition_back():
+        """
+        Transition back to the main screen
+        :return:
+        """
+        SCREEN_MANAGER.current = MAIN_SCREEN_NAME
+
+    @staticmethod
+    def shutdown():
+        """
+        Shutdown the system. This should free all steppers and do any cleanup necessary
+        :return: None
+        """
+        os.system("sudo shutdown now")
+
+    @staticmethod
+    def exit_program():
+        """
+        Quit the program. This should free all steppers and do any cleanup necessary
+        :return: None
+        """
+        quit()
 
 
 """
@@ -517,7 +570,8 @@ Builder.load_file('VideoApp.kv')
 SCREEN_MANAGER.add_widget(MainScreen(name=MAIN_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(RightScreen(name=RIGHT_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(LeftScreen(name=LEFT_SCREEN_NAME))
-SCREEN_MANAGER.add_widget(PlacementScreen(name=PLACEMENT_SCREEN_NAME))
+SCREEN_MANAGER.add_widget(AdminScreen(name=ADMIN_SCREEN_NAME))
+SCREEN_MANAGER.add_widget(PassCodeScreen(name='passCode'))
 
 if __name__ == "__main__":
     ProjectNameGUI().run()

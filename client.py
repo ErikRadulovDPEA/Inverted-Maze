@@ -5,6 +5,12 @@ from dpeaDPi.DPiPowerDrive import DPiPowerDrive
 from dpeaDPi.DPiDigitalIn import DPiDigitalIn
 from time import sleep, time
 from threading import Thread
+import board
+import busio
+import adafruit_max9744
+i2c = busio.I2C(board.SCL, board.SDA)
+amp = adafruit_max9744.MAX9744(i2c)
+amp.volume = 31  # set amp volume
 
 dpiComputer = DPiComputer()
 dpiPowerDrive = DPiPowerDrive()
@@ -40,37 +46,53 @@ class Maze_Client:
                 dpiDigitalIn.setLatchActiveHigh(i)
             dpiDigitalIn.clearAllLatches()
             print("Client initialized")
+            self.button1_pressed = False
+            self.button2_pressed = False
+            self.button3_pressed = False
         except Exception as err:
             print("Client failed to initialize")
             raise err
 
     def switch(self):
-        try:
-            packet = self.client.recv_packet()
-            packet_type = str(packet[0])
-            if packet_type == "PacketType.COMMAND1":
-                dpiPowerDrive.switchDriverOnOrOff(0, False)
+        while True:
+            try:
+                packet = self.client.recv_packet()
+                packet_type = str(packet[0])
+                if packet_type == "PacketType.COMMAND1":
+                    dpiPowerDrive.switchDriverOnOrOff(0, False)
+                elif packet_type == "PacketType.COMMAND2":
+                    vol = int(packet[1].decode('utf-8'))
+                    amp.volume = vol
+                elif packet_type == "PacketType.COMMAND3":
+                    brightness = int(packet[1].decode('utf-8'))
+                    dpiPowerDrive.setDriverPWM(0, brightness)
 
-        except Exception as e:
-            self.client.send_packet(PacketType.RESPONSE_ERROR, bytearray(str(e), 'utf-8'))
+            except Exception as e:
+                self.client.send_packet(PacketType.RESPONSE_ERROR, bytearray(str(e), 'utf-8'))
 
     def button1(self):
-        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_0):
+        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_0) and not self.button1_pressed:
             self.client.send_packet(PacketType.COMMAND1, b"but1")
-            print("sent button_1 to server")
-            sleep(0.2)
+            self.button1_pressed = True
+            sleep(0.05)
+        elif dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_0) and self.button1_pressed:
+            self.button1_pressed = False
 
     def button2(self):
-        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_1):
+        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_1) and not self.button2_pressed:
             self.client.send_packet(PacketType.COMMAND2, b"but2")
-            print("sent button_2 to server")
-            sleep(0.2)
+            self.button2_pressed = True
+            sleep(0.05)
+        elif dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_1) and self.button2_pressed:
+            self.button2_pressed = False
 
     def button3(self):
-        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_3):
+        if not dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_3) and not self.button3_pressed:
             self.client.send_packet(PacketType.COMMAND3, b"but3")
-            print("sent button_3 to server")
-            sleep(0.25)
+            self.button3_pressed = True
+            sleep(0.05)
+        elif dpiComputer.readDigitalIn(dpiComputer.IN_CONNECTOR__IN_3) and self.button3_pressed:
+            self.button3_pressed = False
 
     def return_ending_time(self, time_dif):
         payload = str(time_dif).encode('utf-8')
@@ -99,8 +121,8 @@ class Maze_Client:
 if __name__ == "__main__":
     c = Maze_Client()
     c.ping_test()
-    dpiPowerDrive.switchDriverOnOrOff(0, True)
-    dpiPowerDrive.setDriverPWM(0, 16)
+    dpiPowerDrive.switchDriverOnOrOff(0, True)  # turn on leds
+    dpiPowerDrive.setDriverPWM(0, 16)  # set the brightness to 16
     Thread(target=c.switch, daemon=True).start()
     while True:
         c.button1()
@@ -115,3 +137,4 @@ if __name__ == "__main__":
         if latch_value_1:
             end_time = time()
             c.return_ending_time(end_time - start_time)
+        sleep(0.01)  # small delay to prevent high cpu usage

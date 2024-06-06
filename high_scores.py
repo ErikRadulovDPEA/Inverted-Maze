@@ -28,6 +28,7 @@ class HighScore:
             # json.dump(truncated_scores, file)
             json.dump(self.scores, file)
 
+
     def load_from_json(self):
         with open("high_scores.json", 'r') as file:
             loaded_scores = json.load(file)

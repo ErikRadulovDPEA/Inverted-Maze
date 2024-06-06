@@ -1,6 +1,7 @@
 import enum
 from dpea_p2p.server import Server
 
+
 class PacketType(enum.Enum):
     NULL = 0
     COMMAND0 = 0
@@ -11,6 +12,7 @@ class PacketType(enum.Enum):
     COMMAND5 = 5
     COMMAND6 = 6
     COMMAND7 = 7
+    RESPONSE_ERROR = 8
 
 
 class Maze_Server:
@@ -51,6 +53,24 @@ class Maze_Server:
         if num == 1:
             self.server.send_packet(PacketType.COMMAND1, b"cleanup")
             print("sent packet to client")
+
+    def change_volume(self, vol):
+        vol = int(vol)
+        if self.server is None:
+            raise Exception("In Server.change_volume(): Server object does not exist")
+        else:
+            print(f"{vol}")
+            payload = str(vol).encode('utf-8')
+            self.server.send_packet(PacketType.COMMAND2, payload)
+
+    def change_brightness(self, brightness):
+        brightness = int(brightness)
+        print(f"{brightness}")
+        if self.server is None:
+            raise Exception("In Server.change_brightness(): Server object does not exist")
+        else:
+            payload = str(brightness).encode('utf-8')
+            self.server.send_packet(PacketType.COMMAND3, payload)
 
     def switch(self):
         try:
@@ -102,8 +122,6 @@ class Maze_Server:
                 return True
         else:
             return 0
-
-
 
 
 if __name__ == "__main__":
