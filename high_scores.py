@@ -24,9 +24,9 @@ class HighScore:
 
     def save_to_json(self):
         with open("high_scores.json", 'w') as file:
-            # truncated_scores = {level: self.scores[level][:3] for level in self.scores}
-            # json.dump(truncated_scores, file)
-            json.dump(self.scores, file)
+            truncated_scores = {level: self.scores[level][:3] for level in self.scores}
+            json.dump(truncated_scores, file)
+            # json.dump(self.scores, file)
 
 
     def load_from_json(self):

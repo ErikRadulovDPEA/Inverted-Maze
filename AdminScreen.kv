@@ -9,8 +9,26 @@
         pos_hint: {'center_x': 0.85, 'center_y': 0.85}
         color: 0.035, 0.152, 0.725, 1
 
-        text: "Go back"
+        text: "go back"
         on_press: root.transition_back()
+
+    DPEAButton:
+        #Shutdown button
+        size: 175, 100
+        pos_hint: {'center_x': 0.5, 'center_y': 0.85}
+        color: 0.035, 0.152, 0.725, 1
+
+        text: "shutdown"
+        on_press: root.shutdown()
+
+    DPEAButton:
+        #exit program button
+        size: 175, 100
+        pos_hint: {'center_x': 0.15, 'center_y': 0.85}
+        color: 0.035, 0.152, 0.725, 1
+
+        text: "exit program"
+        on_press: root.exit_program()
 
     # volume slider
     Label:
